@@ -1,69 +1,55 @@
-import React, { Component } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import Header from '../components/Header';
 import getMusics from '../services/musicsAPI';
+import Loading from './Loading';
+import MusicCards from '../components/MusicCard';
 
-class Album extends Component {
-  constructor() {
-    super();
-
-    this.state = {
-      arraymusic: [],
-      inf: {},
-    };
+class Album extends React.Component {
+  state = {
+    array: [],
+    loading: true,
   }
 
   async componentDidMount() {
     const { match: { params: { id } } } = this.props;
-    const musicsList = await getMusics(id);
-    const inf = musicsList[0];
-    this.setState({ arraymusic: musicsList.slice(1), inf });
+    const musics = await getMusics(id);
+    this.setState({ loading: false, array: [...musics] });
   }
 
   render() {
-    const { arraymusic, inf } = this.state;
-    const { artistName, collectionName } = inf;
+    const { array, loading } = this.state;
     return (
-      <>
+      <div data-testid="page-album">
         <Header />
-        <div data-testid="page-album">
+        <h3>Album</h3>
+        { loading ? <Loading /> : (
           <div>
-            <h2 data-testid="artist-name">{artistName}</h2>
-            <h3 data-testid="album-name">{collectionName}</h3>
-            <div>
-              <div>
-                {arraymusic.map((music, i) => (
-                  <div key={ i }>
-                    <audio
-                      data-testid="audio-component"
-                      src={ music.previewUrl }
-                      controls
-                    >
-                      <track kind="captions" />
-                      O seu navegador não suporta o elemento
-                      {' '}
-                      <code>audio</code>
-                      .
-                    </audio>
-                    <span>{music.trackName}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <p data-testid="artist-name">{ array[0].artistName }</p>
+            <p data-testid="album-name">{ array[0].collectionName }</p>
+            { array.filter((a) => a.trackId)
+              .map((a) => (
+                <MusicCards
+                  key={ a.trackId }
+                  trackName={ a.trackName }
+                  previewUrl={ a.previewUrl }
+                  trackId={ a.trackId }
+                  track={ a }
+                />
+              ))}
           </div>
-        </div>
-      </>
+        )}
+      </div>
     );
   }
 }
 
 Album.propTypes = {
-  id: PropTypes.string,
-  match: PropTypes.objectOf(PropTypes.any),
-};
-
-Album.defaultProps = {
-  id: '', match: '',
+  match: PropTypes.shape({
+    params: PropTypes.shape({
+      id: PropTypes.string,
+    }),
+  }).isRequired,
 };
 
 export default Album;
