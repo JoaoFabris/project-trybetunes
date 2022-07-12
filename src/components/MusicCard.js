@@ -1,41 +1,59 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { addSong } from '../services/favoriteSongsAPI';
+import { addSong, getFavoriteSongs } from '../services/favoriteSongsAPI';
 import Loading from '../pages/Loading';
 
 class MusicCards extends React.Component {
   state = {
     checked: false,
-    inloading: false,
+    loading: false,
   }
 
-  addFavoriteSong = async () => {
+  componentDidMount = async () => {
+    this.setState({ loading: true });
+    const favoriteSongs = await getFavoriteSongs();
+    this.setState({ loading: false });
+    const { track } = this.props;
+    const listSong = favoriteSongs.some((song) => song.trackId === track.trackId);
+    if (listSong) {
+      this.setState({ checked: true });
+    } else {
+      this.setState({ checked: false });
+    }
+  }
+
+  favsong = async () => {
     const { track } = this.props;
     const { checked } = this.state;
-    this.setState({ inloading: true });
+    this.setState({ loading: true });
     if (checked) {
       await addSong(track);
     }
-    this.setState({ inloading: false });
+    this.setState({ loading: false });
   }
 
-  handleInputChange = ({ target }) => {
+  InputChange = ({ target }) => {
     const { name } = target;
-    const value = target.type === 'checkbox' ? target.checked : target.value;
-    this.setState({ [name]: value }, () => this.addFavoriteSong());
+    const value = target.type
+    === 'checkbox' ? target.checked : target.value;
+    this.setState({ [name]: value }, () => this.favsong());
   }
 
   render() {
     const { trackName, previewUrl, trackId } = this.props;
-    const { inloading, checked } = this.state;
+    const { loading, checked } = this.state;
     return (
       <div className="containerMusicCard">
-        { inloading ? <Loading /> : (
+        { loading ? <Loading /> : (
           <div>
             <p>{ trackName }</p>
-            <audio data-testid="audio-component" src={ previewUrl } controls>
+            <audio
+              data-testid="audio-component"
+              src={ previewUrl }
+              controls
+            >
               <track kind="captions" />
-              O seu navegador não suporta o elemento
+              O seu navegador não suporta o elemento!
               <code>audio</code>
             </audio>
             <label htmlFor="checkboxFav">
@@ -45,7 +63,7 @@ class MusicCards extends React.Component {
                 data-testid={ `checkbox-music-${trackId}` }
                 name="checked"
                 type="checkbox"
-                onChange={ this.handleInputChange }
+                onChange={ this.InputChange }
                 value={ trackId }
                 checked={ checked }
               />
